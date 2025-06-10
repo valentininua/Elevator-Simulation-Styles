@@ -1,0 +1,1322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Elevator System</title>
+ 
+    <style>
+        /* NEW VERSION */
+
+        /* Base styles */
+        body {
+            font-family: Arial, sans-serif; /* Changed font to a web-safe default */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: #f0f2f5;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+            color: #333;
+        }
+        
+        .wrapper {
+            display: flex;
+            gap: 20px;
+            background-color: #ffffff;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            position: relative;
+        }
+
+        /* Floor Labels Column */
+        .floor-labels {
+            display: flex;
+            flex-direction: column; /* Floors from top to bottom */
+            justify-content: space-around;
+            padding-right: 15px;
+            border-right: 1px solid #eee;
+        }
+
+        .floor-label {
+            height: 60px; /* Should match elevator slot height */
+            display: flex;
+            align-items: center;
+            font-weight: bold;
+            color: #555;
+            font-size: 14px;
+            justify-content: flex-end; /* Align text to the right */
+            padding-right: 10px;
+        }
+
+        /* Elevator Grid */
+        .elevator-grid {
+            display: flex;
+            flex-direction: column; /* Floors from top to bottom */
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            overflow: hidden;
+            background-color: #e9ebee;
+            position: relative; /* ДОБАВЛЕНО: для правильного позиционирования абсолютных дочерних элементов */
+        }
+
+        .floor-row {
+            display: flex;
+            border-bottom: 1px solid #eee;
+        }
+
+        .floor-row:last-child {
+            border-bottom: none;
+        }
+
+        .elevator-slot {
+            width: 50px;
+            height: 60px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            background-color: #f9f9f9;
+            border-right: 1px solid #eee;
+        }
+
+        .elevator-slot:last-child {
+            border-right: none;
+        }
+
+        /* Elevator Styles */
+        .elevator {
+            width: 40px;
+            height: 50px;
+            background-color: #424242;
+            border-radius: 6px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            transition: background-color 0.3s ease;
+            position: relative; /* For indicators */
+            cursor: pointer; /* Makes elevator clickable for service toggle */
+        }
+
+        .elevator svg {
+            fill: #f0f0f0; /* Elevator icon color */
+            width: 28px;
+            height: 28px;
+        }
+
+        .elevator.out-of-service {
+            opacity: 0.6;
+        }
+
+        /* Service Indicator */
+        .service-indicator {
+            position: absolute;
+            bottom: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 10px;
+            color: #9E9E9E;
+            white-space: nowrap;
+        }
+
+        /* Emergency Button */
+        .emergency-button {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background-color: #f44336;
+            color: white;
+            border: none;
+            padding: 15px 25px;
+            border-radius: 5px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            z-index: 100;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+        }
+        .emergency-button:hover {
+            background-color: #d32f2f;
+            transform: translateY(-2px);
+        }
+        .emergency-button:active {
+            transform: translateY(0);
+        }
+
+        /* Direction Indicator */
+        .direction-indicator {
+            position: absolute;
+            top: 2px;
+            right: 4px;
+            font-size: 12px;
+            color: white;
+            font-weight: bold;
+        }
+
+        /* Time Indicator */
+        .time-indicator {
+            position: absolute;
+            bottom: 2px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 10px;
+            color: white;
+            white-space: nowrap;
+        }
+
+        /* Buttons Column */
+        .buttons-column {
+            display: flex;
+            flex-direction: column; /* Buttons from top to bottom */
+            justify-content: space-around;
+            padding-left: 15px;
+            border-left: 1px solid #eee;
+        }
+
+        /* Call Button Styles */
+        .call-button {
+            background-color: #4CAF50; /* Green */
+            color: white;
+            border: none;
+            border-radius: 5px;
+            padding: 8px 12px;
+            cursor: pointer;
+            font-size: 14px;
+            min-width: 80px;
+            text-align: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            transition: background-color 0.2s ease, transform 0.1s ease;
+        }
+
+        .call-button:hover {
+            background-color: #45a049;
+            transform: translateY(-1px);
+        }
+
+        .call-button:active {
+            transform: translateY(1px);
+        }
+
+        .call-button.waiting {
+            background-color: #FFC107; /* Amber */
+            cursor: default;
+        }
+
+        .call-button.waiting:hover {
+            background-color: #FFC107;
+            transform: none;
+        }
+
+        .call-button.arrived {
+            background-color: #2196F3; /* Blue */
+            cursor: default;
+        }
+
+        .call-button.arrived:hover {
+            background-color: #2196F3;
+            transform: none;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .wrapper {
+                flex-direction: column;
+                align-items: center;
+                gap: 15px;
+                padding: 20px;
+            }
+
+            .floor-labels, .buttons-column {
+                flex-direction: row;
+                width: 100%;
+                justify-content: space-around;
+                border: none;
+                padding: 0;
+            }
+
+            .floor-labels {
+                border-bottom: 1px solid #eee;
+                padding-bottom: 10px;
+                order: 1; /* Move floor labels to top */
+            }
+
+            .elevator-grid {
+                order: 2; /* Elevator grid in center */
+            }
+
+            .buttons-column {
+                border-top: 1px solid #eee;
+                padding-top: 10px;
+                order: 3; /* Buttons at the bottom */
+            }
+
+            .floor-label, .call-button {
+                height: auto;
+                padding: 5px 8px;
+                font-size: 12px;
+            }
+
+            .elevator-slot {
+                width: 40px;
+                height: 50px;
+            }
+
+            .elevator {
+                width: 30px;
+                height: 40px;
+            }
+
+            .elevator svg {
+                width: 20px;
+                height: 20px;
+            }
+
+            .emergency-button {
+                position: static; /* Make button static in mobile version */
+                margin-bottom: 15px; /* Add bottom margin */
+                width: calc(100% - 40px); /* Make it wider */
+                box-sizing: border-box;
+                order: 0; /* Move to the very top */
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container"></div>
+
+    <script>
+        // NEW VERSION
+
+        // Utility function to debounce calls
+        function debounce(func, wait) {
+          let timeout;
+          return function executedFunction(...args) {
+            const later = () => {
+              clearTimeout(timeout);
+              func(...args);
+            };
+            clearTimeout(timeout);
+            timeout = setTimeout(later, wait);
+          };
+        }
+
+        // Audio Service for sound effects
+        class AudioService {
+          constructor() {
+            this.audioContext = null;
+          }
+
+          getAudioContext() {
+            if (!this.audioContext) {
+              this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            return this.audioContext;
+          }
+
+          playArrivalSound() {
+            try {
+              const ctx = this.getAudioContext();
+              const oscillator = ctx.createOscillator();
+              const gain = ctx.createGain();
+              
+              oscillator.type = 'sine';
+              oscillator.frequency.setValueAtTime(880, ctx.currentTime);
+              
+              gain.gain.setValueAtTime(0, ctx.currentTime);
+              gain.gain.linearRampToValueAtTime(0.2, ctx.currentTime + 0.1);
+              gain.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.5);
+              
+              oscillator.connect(gain);
+              gain.connect(ctx.destination);
+              
+              oscillator.start();
+              oscillator.stop(ctx.currentTime + 0.5);
+            } catch (e) {
+              console.error('Error playing sound:', e);
+            }
+          }
+
+          playEmergencySound() {
+            try {
+              const ctx = this.getAudioContext();
+              const oscillator = ctx.createOscillator();
+              const gain = ctx.createGain();
+              
+              oscillator.type = 'sine';
+              oscillator.frequency.setValueAtTime(440, ctx.currentTime);
+              
+              gain.gain.setValueAtTime(0, ctx.currentTime);
+              gain.gain.linearRampToValueAtTime(0.3, ctx.currentTime + 0.1);
+              gain.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.3);
+              
+              oscillator.connect(gain);
+              gain.connect(ctx.destination);
+              
+              oscillator.start();
+              oscillator.stop(ctx.currentTime + 0.3);
+
+              // Play three beeps
+              setTimeout(() => {
+                const oscillator2 = ctx.createOscillator();
+                const gain2 = ctx.createGain();
+                
+                oscillator2.type = 'sine';
+                oscillator2.frequency.setValueAtTime(440, ctx.currentTime);
+                
+                gain2.gain.setValueAtTime(0, ctx.currentTime);
+                gain2.gain.linearRampToValueAtTime(0.3, ctx.currentTime + 0.1);
+                gain2.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.3);
+                
+                oscillator2.connect(gain2);
+                gain2.connect(ctx.destination);
+                
+                oscillator2.start();
+                oscillator2.stop(ctx.currentTime + 0.3);
+              }, 400);
+
+              setTimeout(() => {
+                const oscillator3 = ctx.createOscillator();
+                const gain3 = ctx.createGain();
+                
+                oscillator3.type = 'sine';
+                oscillator3.frequency.setValueAtTime(440, ctx.currentTime);
+                
+                gain3.gain.setValueAtTime(0, ctx.currentTime);
+                gain3.gain.linearRampToValueAtTime(0.3, ctx.currentTime + 0.1);
+                gain3.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.3);
+                
+                oscillator3.connect(gain3);
+                gain3.connect(ctx.destination);
+                
+                oscillator3.start();
+                oscillator3.stop(ctx.currentTime + 0.3);
+              }, 800);
+            } catch (e) {
+              console.error('Error playing emergency sound:', e);
+            }
+          }
+        }
+
+        // Elevator State Interface
+        class ElevatorState {
+          constructor(floor, status) {
+            this.currentFloor = floor;
+            this.status = status;
+          }
+        }
+
+        // Elevator Class
+        class Elevator {
+          constructor(id, initialFloor = 0) {
+            this.id = id;
+            this.state = new ElevatorState(initialFloor, 'idle');
+            this.outOfService = false;
+            this.element = this.createElevatorElement();
+            this.emergencyStop = false;
+            this.preEmergencyState = null; // Сохраняем предыдущее состояние лифта
+            this.preEmergencyFloor = null;  // Сохраняем предыдущий этаж лифта
+          }
+
+          toggleService() {
+            if (this.state.status === 'moving') {
+              return; // Не переключать, пока лифт движется
+            }
+            this.outOfService = !this.outOfService;
+            this.element.classList.toggle('out-of-service', this.outOfService);
+            
+            const serviceIndicator = this.element.querySelector('.service-indicator');
+            if (serviceIndicator) {
+              serviceIndicator.textContent = this.outOfService ? 'Service' : '';
+            }
+            
+            // Обновляем внешний вид лифта
+            this.updateAppearance();
+          }
+
+          updateAppearance() {
+            const svgIcon = this.element.querySelector('svg');
+            if (svgIcon) {
+              if (this.emergencyStop) {
+                svgIcon.style.fill = '#FF9800'; // Оранжевый для аварийного режима
+              } else if (this.outOfService) {
+                svgIcon.style.fill = '#9E9E9E'; // Серый для неработающего
+              } else if (this.state.status === 'moving') {
+                svgIcon.style.fill = '#f44336'; // Красный для движущегося
+              } else if (this.state.status === 'arrived') {
+                svgIcon.style.fill = '#4CAF50'; // Зеленый для прибывшего
+              } else {
+                svgIcon.style.fill = '#000'; // Черный для простоя
+              }
+            }
+          }
+
+          createElevatorElement() {
+            const elevator = document.createElement('div');
+            elevator.className = 'elevator';
+            elevator.dataset.id = this.id;
+            elevator.dataset.currentFloor = this.state.currentFloor;
+            elevator.dataset.status = this.state.status;
+
+            // Add elevator icon and indicators
+            elevator.innerHTML = `
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 50 50" fill="#000" width="24" height="24">
+                <path d="M 15.875 0 C 15.617188 0.0351563 15.378906 0.167969 15.21875 0.375 L 10.21875 6.375 C 9.976563 6.675781 9.929688 7.085938 10.097656 7.433594 C 10.265625 7.78125 10.617188 8 11 8 L 21 8 C 21.382813 8 21.734375 7.78125 21.902344 7.433594 C 22.070313 7.085938 22.023438 6.675781 21.78125 6.375 L 16.78125 0.375 C 16.566406 0.101563 16.222656 -0.0429688 15.875 0 Z M 29.8125 0 C 29.460938 0.0625 29.171875 0.308594 29.046875 0.640625 C 28.925781 0.976563 28.992188 1.351563 29.21875 1.625 L 34.21875 7.625 C 34.410156 7.863281 34.695313 8 35 8 C 35.304688 8 35.589844 7.863281 35.78125 7.625 L 40.78125 1.625 C 41.023438 1.324219 41.070313 0.914063 40.902344 0.566406 C 40.734375 0.21875 40.382813 0 40 0 L 30 0 C 29.96875 0 29.9375 0 29.90625 0 C 29.875 0 29.84375 0 29.8125 0 Z M 32.125 2 L 37.875 2 L 35 5.4375 Z M 16 2.5625 L 18.875 6 L 13.125 6 Z M 3 10 C 1.355469 10 0 11.355469 0 13 L 0 47 C 0 48.644531 1.355469 50 3 50 L 47 50 C 48.644531 50 50 48.644531 50 47 L 50 13 C 50 11.355469 48.644531 10 47 10 Z M 3 12 L 47 12 C 47.554688 12 48 12.445313 48 13 L 48 47 C 48 47.554688 47.554688 48 47 48 L 3 48 C 2.445313 48 2 47.554688 2 47 L 2 13 C 2 12.445313 2.445313 12 3 12 Z M 11 14 C 8.800781 14 7 15.800781 7 18 C 7 20.199219 8.800781 22 11 22 C 13.199219 22 15 20.199219 15 18 C 15 15.800781 13.199219 14 11 14 Z M 11 22 C 7.675781 22 5 24.675781 5 28 L 5 35 C 4.996094 35.386719 5.214844 35.738281 5.5625 35.90625 L 7 36.625 L 7 45 C 7 45.550781 7.449219 46 8 46 L 14 46 C 14.550781 46 15 45.550781 15 45 L 15 36.625 L 16.4375 35.90625 C 16.785156 35.738281 17.003906 35.386719 17 35 L 17 28 C 17 24.675781 14.324219 22 11 22 Z M 25 14 C 22.800781 14 21 15.800781 21 18 C 21 20.199219 22.800781 22 25 22 C 27.199219 22 29 20.199219 29 18 C 29 15.800781 27.199219 14 25 14 Z M 25 22 C 21.675781 22 19 24.675781 19 28 L 19 35 C 18.996094 35.386719 19.214844 35.738281 19.5625 35.90625 L 21 36.625 L 21 45 C 21 45.550781 21.449219 46 22 46 L 28 46 C 28.550781 46 29 45.550781 29 45 L 29 36.625 L 30.4375 35.90625 C 30.785156 35.738281 31.003906 35.386719 31 35 L 31 28 C 31 24.675781 28.324219 22 25 22 Z M 39 14 C 36.800781 14 35 15.800781 35 18 C 35 20.199219 36.800781 22 39 22 C 41.199219 22 43 20.199219 43 18 C 43 15.800781 41.199219 14 39 14 Z M 39 22 C 35.675781 22 33 24.675781 33 28 L 33 35 C 32.996094 35.386719 33.214844 35.738281 33.5625 35.90625 L 35 36.625 L 35 45 C 35 45.550781 35.449219 46 36 46 L 42 46 C 42.550781 46 43 45.550781 43 45 L 43 36.625 L 44.4375 35.90625 C 44.785156 35.738281 45.003906 35.386719 45 35 L 45 28 C 45 24.675781 42.324219 22 39 22 Z"/>
+              </svg>
+              <div class="direction-indicator">⬤</div>
+              <div class="time-indicator"></div>
+              <div class="service-indicator"></div>
+            `;
+
+            // Добавляем обработчик клика для переключения режима обслуживания
+            elevator.addEventListener('click', () => {
+              if (this.state.status !== 'moving') {
+                this.toggleService();
+              }
+            });
+
+            return elevator;
+          }
+
+          getCurrentFloor() {
+            return this.state.currentFloor;
+          }
+
+          getStatus() {
+            return this.state.status;
+          }
+
+          setStatus(status) {
+            // Не разрешать движение, если лифт неисправен или в аварийном режиме
+            if ((this.outOfService || this.emergencyStop) && status === 'moving') {
+              return;
+            }
+            
+            this.state.status = status;
+            this.element.dataset.status = status;
+            this.updateAppearance();
+          }
+
+          setFloor(floor) {
+            this.state.currentFloor = floor;
+            this.element.dataset.currentFloor = floor;
+          }
+
+          updateTimeIndicator(text) {
+            const indicator = this.element.querySelector('.time-indicator');
+            if (indicator) {
+              indicator.textContent = text;
+            }
+          }
+
+          updateDirectionIndicator(targetFloor) {
+            const directionIndicator = this.element.querySelector('.direction-indicator');
+            if (!directionIndicator) return;
+
+            const currentFloor = this.getCurrentFloor();
+            if (this.state.status === 'moving') {
+              directionIndicator.textContent = targetFloor > currentFloor ? '↑' : '↓';
+            } else {
+              directionIndicator.textContent = '⬤';
+            }
+          }
+
+          // Принимает elevatorGrid в качестве аргумента
+          createMovingClone(startY, elevatorGrid, elevatorId) { // Добавлен elevatorId
+            // Убеждаемся, что elevatorGrid действителен
+            if (!elevatorGrid) {
+                console.error('elevatorGrid не определен в createMovingClone!');
+                return null; // Возвращаем null, чтобы предотвратить дальнейшие ошибки
+            }
+            const clone = this.element.cloneNode(true);
+            clone.className = 'elevator moving';
+            clone.style.position = 'absolute';
+            
+            // Получаем актуальные размеры слота и лифта
+            // Используем elevatorId для поиска слота
+            const currentSlot = elevatorGrid.querySelector(`[data-floor="${this.state.currentFloor}"][data-slot="${elevatorId}"]`);
+            if (!currentSlot) {
+                console.error(`currentSlot не найден для лифта ${elevatorId} на этаже ${this.state.currentFloor}`);
+                return null;
+            }
+            const gridRect = elevatorGrid.getBoundingClientRect();
+            const currentRect = currentSlot.getBoundingClientRect();
+
+            // Ширина лифта из CSS
+            const elevatorWidth = 40; 
+            // Вычисляем левую позицию для центрирования лифта в слоте
+            // currentRect.left - gridRect.left дает позицию слота относительно сетки
+            // (currentRect.width - elevatorWidth) / 2 центрирует лифт внутри слота
+            const leftPosition = currentRect.left - gridRect.left + (currentRect.width - elevatorWidth) / 2;
+            
+            clone.style.left = `${leftPosition}px`; 
+            clone.style.top = `${startY}px`;
+            clone.dataset.id = this.id; // Добавляем ID лифта к клону
+            return clone;
+          }
+
+          activateEmergencyStop() {
+            this.preEmergencyState = this.state.status; // Сохраняем предыдущее состояние
+            this.preEmergencyFloor = this.state.currentFloor; // Сохраняем текущий этаж
+            this.emergencyStop = true;
+            this.setStatus('emergency');
+            this.updateAppearance();
+          }
+
+          deactivateEmergencyStop() {
+            this.emergencyStop = false;
+            // При деактивации аварийной остановки, устанавливаем статус "idle",
+            // а затем ElevatorManager будет перемещать лифт на preEmergencyFloor
+            this.setStatus('idle'); 
+            this.updateAppearance();
+          }
+        }
+
+        // Elevator Manager
+        class ElevatorManager {
+          constructor(numElevators) {
+            this.elevators = Array.from({ length: numElevators }, (_, i) => new Elevator(i));
+            this.pendingCalls = [];
+            this.audioService = new AudioService();
+            this.elevatorGrid = null; // Будет установлен менеджером UI
+            this.emergencyMode = false;
+            this.activeAnimations = [];
+            this.emergencyButton = null;
+          }
+
+          setElevatorGrid(grid) {
+            this.elevatorGrid = grid;
+          }
+
+          findClosestElevator(targetFloor) {
+            let chosenElevator = -1;
+            let shortestDistance = Infinity;
+
+            this.elevators.forEach((elevator, index) => {
+              if (elevator.outOfService || elevator.emergencyStop) {
+                return; // Пропускаем неработающие или аварийно остановленные лифты
+              }
+              
+              const currentFloor = elevator.getCurrentFloor();
+              const distance = Math.abs(currentFloor - targetFloor);
+
+              if (elevator.getStatus() !== 'moving' && distance < shortestDistance) {
+                shortestDistance = distance;
+                chosenElevator = index;
+              }
+            });
+
+            return chosenElevator;
+          }
+
+          async moveElevator(elevatorIndex, targetFloor, onComplete) {
+            console.log(`[moveElevator] Лифт ${elevatorIndex} вызван на этаж ${targetFloor}. Текущий этаж: ${this.elevators[elevatorIndex].getCurrentFloor()}`);
+
+            // Убеждаемся, что elevatorGrid установлен перед продолжением
+            if (!this.elevatorGrid) {
+                console.error("[moveElevator] elevatorGrid не инициализирован. Невозможно переместить лифт.");
+                if (onComplete) onComplete(); // Освобождаем кнопку, если сетка не готова
+                return;
+            }
+
+            // Если активен аварийный режим, не двигаем лифты по обычным вызовам
+            if (this.emergencyMode && onComplete) { 
+              console.log(`[moveElevator] Аварийный режим активен, пропускаем обычный вызов для лифта ${elevatorIndex}.`);
+              return;
+            }
+
+            const elevator = this.elevators[elevatorIndex];
+            const currentFloor = elevator.getCurrentFloor();
+
+            if (currentFloor === targetFloor || elevator.getStatus() === 'moving') {
+              console.log(`[moveElevator] Лифт ${elevatorIndex} уже на целевом этаже (${targetFloor}) или движется. Статус: ${elevator.getStatus()}`);
+              if (onComplete) onComplete(); // Если лифт уже на этаже или движется, выполняем колбэк немедленно для Pending Calls
+              return;
+            }
+
+            elevator.setStatus('moving');
+            elevator.updateDirectionIndicator(targetFloor);
+            console.log(`[moveElevator] Статус лифта ${elevatorIndex} установлен в "moving".`);
+
+            // Получаем позиции для анимации
+            const currentSlot = this.elevatorGrid.querySelector(`[data-floor="${currentFloor}"][data-slot="${elevatorIndex}"]`);
+            const targetSlot = this.elevatorGrid.querySelector(`[data-floor="${targetFloor}"][data-slot="${elevatorIndex}"]`);
+            
+            if (!currentSlot || !targetSlot) {
+                console.error(`[moveElevator] Не удалось найти currentSlot или targetSlot для лифта ${elevatorIndex}. Текущий: ${currentFloor}, Целевой: ${targetFloor}`);
+                if (onComplete) onComplete(); // Освобождаем кнопку, если слоты не найдены
+                return;
+            }
+            console.log(`[moveElevator] Слоты найдены для лифта ${elevatorIndex}.`);
+
+            const gridRect = this.elevatorGrid.getBoundingClientRect();
+            const currentRect = currentSlot.getBoundingClientRect();
+            const targetRect = targetSlot.getBoundingClientRect();
+
+            // Вычисляем startY и endY относительно верха elevatorGrid
+            // Чтобы лифт двигался от своего текущего положения до целевого
+            const startY = currentRect.top - gridRect.top;
+            const endY = targetRect.top - gridRect.top;
+            
+            // Создаем клон движущегося лифта
+            // Передаем this.elevatorGrid и elevator.id в createMovingClone
+            const movingElevator = elevator.createMovingClone(startY, this.elevatorGrid, elevator.id);
+            if (!movingElevator) { // Проверяем, не удалось ли создать клон
+                console.error(`[moveElevator] Не удалось создать клон движущегося лифта для лифта ${elevatorIndex}.`);
+                if (onComplete) onComplete(); // Освобождаем кнопку, если создание клона не удалось
+                return;
+            }
+            this.elevatorGrid.appendChild(movingElevator);
+            console.log(`[moveElevator] Клон движущегося лифта создан и добавлен для лифта ${elevatorIndex}.`);
+
+            // Удаляем из текущего слота
+            if (elevator.element.parentElement) {
+              elevator.element.parentElement.removeChild(elevator.element);
+              console.log(`[moveElevator] Оригинальный элемент лифта удален из DOM для лифта ${elevatorIndex}.`);
+            }
+
+            // Вычисляем время в пути (1 секунда на этаж)
+            const floorsToTravel = Math.abs(targetFloor - currentFloor);
+            const travelTime = floorsToTravel * 1000;
+            console.log(`[moveElevator] Лифт ${elevatorIndex} проезжает ${floorsToTravel} этажей, время в пути: ${travelTime}мс`);
+
+            // Обновляем индикатор времени
+            let remainingSeconds = floorsToTravel;
+            elevator.updateTimeIndicator(remainingSeconds > 0 ? `${remainingSeconds} Sec.` : 'Arrived');
+            const countdownInterval = setInterval(() => {
+              remainingSeconds--;
+              elevator.updateTimeIndicator(remainingSeconds > 0 ? `${remainingSeconds} Sec.` : 'Arrived');
+              console.log(`[moveElevator] Обратный отсчет лифта ${elevatorIndex}: ${remainingSeconds}с`);
+            }, 1000);
+
+            // Отслеживаем активную анимацию
+            const animationId = Date.now();
+            // Добавляем только интервал, таймаут будет добавлен ниже
+            this.activeAnimations.push({
+              id: animationId,
+              interval: countdownInterval,
+              element: movingElevator,
+              elevatorInstance: elevator, // Сохраняем ссылку на объект лифта
+              targetFloor: targetFloor // Сохраняем целевой этаж для восстановления после аварии
+            });
+
+            // Анимируем движение
+            movingElevator.style.transition = `top ${floorsToTravel}s linear`;
+            setTimeout(() => {
+              movingElevator.style.top = `${endY}px`;
+              console.log(`[moveElevator] Анимация лифта ${elevatorIndex} запущена. Новое положение сверху: ${endY}px`);
+            }, 50);
+
+            await new Promise(resolve => {
+              const animationComplete = setTimeout(() => {
+                console.log(`[moveElevator] Анимация завершена для лифта ${elevatorIndex}.`);
+                this.clearAnimation(animationId);
+
+                if (this.emergencyMode && onComplete) {
+                  console.log(`[moveElevator] Аварийный режим активен, завершение анимации для обычного вызова отменено для лифта ${elevatorIndex}.`);
+                  resolve();
+                  return;
+                }
+
+                if (movingElevator.parentElement) {
+                  movingElevator.parentElement.removeChild(movingElevator);
+                  console.log(`[moveElevator] Перемещающийся клон удален из DOM для лифта ${elevatorIndex}.`);
+                } else {
+                    console.warn(`[moveElevator] Перемещающийся клон уже удален для лифта ${elevatorIndex}.`);
+                }
+
+                targetSlot.appendChild(elevator.element);
+                elevator.setFloor(targetFloor);
+                elevator.setStatus('arrived');
+                elevator.updateTimeIndicator('');
+                elevator.updateDirectionIndicator(targetFloor);
+                this.audioService.playArrivalSound();
+                console.log(`[moveElevator] Лифт ${elevatorIndex} прибыл на этаж ${targetFloor}. Статус: "arrived".`);
+
+
+                setTimeout(() => {
+                  elevator.setStatus('idle');
+                  console.log(`[moveElevator] Статус лифта ${elevatorIndex} установлен в "idle".`);
+                  if (onComplete) {
+                      onComplete();
+                      console.log(`[moveElevator] onComplete колбэк выполнен для лифта ${elevatorIndex}.`);
+                  }
+                  this.checkPendingCalls();
+                  console.log(`[moveElevator] checkPendingCalls вызван для лифта ${elevatorIndex}.`);
+                }, 2000); // Задержка для анимации/звука прибытия
+
+                resolve();
+              }, travelTime);
+
+              this.activeAnimations.push({
+                id: animationId,
+                timeout: animationComplete,
+                elevatorInstance: elevator
+              });
+            });
+          }
+
+          clearAnimation(id) {
+            this.activeAnimations = this.activeAnimations.filter(anim => {
+              if (anim.id === id) {
+                if (anim.interval) clearInterval(anim.interval);
+                if (anim.timeout) clearTimeout(anim.timeout);
+                if (anim.element && anim.element.parentElement) {
+                  anim.element.parentElement.removeChild(anim.element);
+                }
+                return false;
+              }
+              return true;
+            });
+          }
+
+          addPendingCall(floor, callback) {
+            this.pendingCalls.push({ floor, callback });
+          }
+
+          checkPendingCalls() {
+            if (this.emergencyMode || this.pendingCalls.length === 0) return;
+
+            const availableElevatorIndex = this.elevators.findIndex(e => !e.outOfService && !e.emergencyStop && e.getStatus() !== 'moving');
+            if (availableElevatorIndex === -1) return;
+
+            const nextCall = this.pendingCalls.shift();
+            // Проверяем, если лифт стал недоступен после добавления в очередь, возвращаем вызов
+            if (this.elevators[availableElevatorIndex].outOfService || this.elevators[availableElevatorIndex].emergencyStop) {
+                this.pendingCalls.unshift(nextCall); // Возвращаем вызов в начало очереди
+                return;
+            }
+            this.moveElevator(availableElevatorIndex, nextCall.floor, nextCall.callback);
+          }
+
+          activateEmergency() {
+            if (this.emergencyMode) return;
+
+            this.emergencyMode = true;
+            this.audioService.playEmergencySound();
+
+            // Останавливаем все активные анимации
+            this.activeAnimations.forEach(anim => {
+              if (anim.interval) clearInterval(anim.interval);
+              if (anim.timeout) clearTimeout(anim.timeout);
+              
+              // Удаляем анимированный клон, если он существует
+              if (anim.element && anim.element.parentElement) {
+                anim.element.parentElement.removeChild(anim.element);
+              }
+            });
+            this.activeAnimations = []; // Очищаем список активных анимаций
+
+            // Сбрасываем все кнопки вызова в состояние "Call"
+            const callButtons = document.querySelectorAll('.call-button.waiting, .call-button.arrived');
+            callButtons.forEach(button => {
+                button.textContent = 'Call';
+                button.classList.remove('waiting', 'arrived');
+            });
+            this.pendingCalls = []; // Очищаем очередь ожидающих вызовов
+
+
+            // Отправляем все лифты на первый этаж (0)
+            this.elevators.forEach(elevator => {
+              elevator.activateEmergencyStop(); // Сохраняем текущее состояние и этаж
+
+              // Мгновенно перемещаем лифт на 0-й этаж
+              const groundFloorSlot = this.elevatorGrid.querySelector(`[data-floor="0"][data-slot="${elevator.id}"]`);
+              if (groundFloorSlot) {
+                if (elevator.element.parentElement) {
+                  elevator.element.parentElement.removeChild(elevator.element);
+                }
+                groundFloorSlot.appendChild(elevator.element);
+                elevator.setFloor(0);
+                elevator.setStatus('emergency'); // Устанавливаем статус emergency
+              }
+            });
+
+            // Возобновляем нормальную работу через 10 секунд
+            setTimeout(() => {
+              this.deactivateEmergency();
+            }, 10000);
+          }
+
+          async deactivateEmergency() {
+            this.emergencyMode = false;
+            
+            // Деактивируем аварийную остановку и возвращаем лифты на их предыдущие этажи
+            for (const elevator of this.elevators) {
+              const prevFloor = elevator.preEmergencyFloor;
+              const prevState = elevator.preEmergencyState;
+
+              elevator.deactivateEmergencyStop(); // Снимаем флаг emergencyStop и устанавливаем idle
+              
+              // Перемещаем лифт на предыдущий этаж, если он был сохранен и отличается от текущего
+              if (prevFloor !== null && prevFloor !== elevator.getCurrentFloor()) {
+                await this.moveElevator(elevator.id, prevFloor);
+              } else {
+                // Если лифт уже был на нужном этаже или не двигался, просто возвращаем его статус
+                elevator.setStatus(prevState || 'idle');
+              }
+            }
+
+            // Восстанавливаем ожидающие вызовы после того, как все лифты вернулись
+            this.checkPendingCalls();
+          }
+
+          createEmergencyButton() {
+            const button = document.createElement('button');
+            button.className = 'emergency-button';
+            button.textContent = 'EMERGENCY STOP';
+            button.addEventListener('click', () => this.activateEmergency());
+            return button;
+          }
+        }
+
+        // UI Manager
+        class ElevatorUIManager {
+          constructor(container, floorCount, elevatorManager) {
+            this.container = container;
+            this.floorCount = floorCount;
+            this.elevatorManager = elevatorManager;
+            // Этажи идут от 0 (Ground) до floorCount - 1 (Top)
+            this.floors = Array.from({ length: floorCount }, (_, i) => i); 
+            this.init();
+          }
+
+          init() {
+            this.container.innerHTML = '';
+            this.createLayout();
+            this.setupEventListeners();
+          }
+
+          createLayout() {
+            const wrapper = document.createElement('div');
+            wrapper.className = 'wrapper';
+            
+            // Добавляем кнопку аварийной остановки первой в мобильной версии
+            const emergencyButton = this.elevatorManager.createEmergencyButton();
+            wrapper.appendChild(emergencyButton);
+
+            const floorLabels = this.createFloorLabels();
+            const elevatorGrid = this.createElevatorGrid();
+            const buttonsColumn = this.createButtonsColumn();
+            
+            // Устанавливаем ссылку на сетку лифтов в менеджере
+            this.elevatorManager.setElevatorGrid(elevatorGrid);
+            
+            wrapper.appendChild(floorLabels);
+            wrapper.appendChild(elevatorGrid);
+            wrapper.appendChild(buttonsColumn);
+            
+            this.container.appendChild(wrapper);
+          }
+
+          createFloorLabels() {
+            const floorLabels = document.createElement('div');
+            floorLabels.className = 'floor-labels';
+            
+            // Порядок меток этажей для отображения сверху вниз (9th до Ground)
+            const floorNames = ['Ground', '1st', '2nd', '3rd', '4th', '5th', '6th', '7th', '8th', '9th'];
+            
+            // Перебираем в обратном порядке, чтобы "9th" был сверху в UI
+            floorNames.slice().reverse().forEach(floorName => {
+              const label = document.createElement('div');
+              label.className = 'floor-label';
+              label.textContent = floorName;
+              floorLabels.appendChild(label);
+            });
+            
+            return floorLabels;
+          }
+
+          createElevatorGrid() {
+            const elevatorGrid = document.createElement('div');
+            elevatorGrid.className = 'elevator-grid';
+            
+            // Перебираем этажи в обратном порядке для отображения сетки сверху вниз (9th до Ground)
+            this.floors.slice().reverse().forEach(floorNum => {
+              const floorRow = document.createElement('div');
+              floorRow.className = 'floor-row';
+              
+              // Создаем слоты для каждого лифта
+              for (let i = 0; i < this.elevatorManager.elevators.length; i++) {
+                const slot = document.createElement('div');
+                slot.className = 'elevator-slot';
+                slot.dataset.floor = floorNum;
+                slot.dataset.slot = i;
+                
+                // Добавляем лифт только на Ground этаж (0)
+                if (floorNum === 0) {
+                  const elevator = this.elevatorManager.elevators[i].element;
+                  slot.appendChild(elevator);
+                }
+                
+                floorRow.appendChild(slot);
+              }
+              
+              elevatorGrid.appendChild(floorRow);
+            });
+            
+            return elevatorGrid;
+          }
+
+          createButtonsColumn() {
+            const buttonsColumn = document.createElement('div');
+            buttonsColumn.className = 'buttons-column';
+            
+            // Перебираем этажи в обратном порядке для отображения кнопок сверху вниз (9th до Ground)
+            this.floors.slice().reverse().forEach(floorNum => {
+              const button = document.createElement('button');
+              button.className = 'call-button';
+              button.textContent = 'Call';
+              button.dataset.floor = floorNum;
+              buttonsColumn.appendChild(button);
+            });
+            
+            return buttonsColumn;
+          }
+
+          setupEventListeners() {
+            const buttons = this.container.querySelectorAll('.call-button');
+            
+            buttons.forEach(button => {
+              // Создаем обработчик с задержкой для каждой кнопки
+              const debouncedHandler = debounce(() => {
+                if (this.elevatorManager.emergencyMode) return; // Не обрабатываем вызовы в аварийном режиме
+                
+                const targetFloor = parseInt(button.dataset.floor);
+                
+                // Показываем состояние "Waiting"
+                button.textContent = 'Waiting';
+                button.classList.add('waiting'); 
+                button.classList.remove('arrived');
+                
+                const chosenElevator = this.elevatorManager.findClosestElevator(targetFloor);
+                
+                if (chosenElevator >= 0) {
+                  this.elevatorManager.moveElevator(chosenElevator, targetFloor, () => {
+                    // Обновляем кнопку, чтобы показать прибытие
+                    button.textContent = 'Arrived';
+                    button.classList.add('arrived');
+                    button.classList.remove('waiting');
+                    
+                    // Сбрасываем кнопку после задержки
+                    setTimeout(() => {
+                      button.textContent = 'Call';
+                      button.classList.remove('arrived');
+                    }, 2000);
+                  });
+                } else {
+                  // Ставим запрос в очередь
+                  this.elevatorManager.addPendingCall(targetFloor, () => {
+                    // Этот колбэк вызывается, когда лифт освободится и обслужит этот вызов
+                    button.textContent = 'Call';
+                    button.classList.remove('waiting');
+                  });
+                  console.log(`Все лифты заняты, вызов на этаж ${targetFloor} добавлен в очередь.`);
+                }
+              }, 500); // Задержка в 500 мс
+
+              button.addEventListener('click', debouncedHandler);
+            });
+          }
+        }
+
+        // Initialization
+        function initializeElevatorSystem() {
+          // Add styles
+          const styles = document.createElement('style');
+          styles.textContent = `
+            body {
+              font-family: Arial, sans-serif; /* Changed font to a web-safe default */
+              display: flex;
+              justify-content: center;
+              align-items: center;
+              min-height: 100vh;
+              background-color: #f0f2f5;
+              margin: 0;
+              padding: 20px;
+              box-sizing: border-box;
+              color: #333;
+            }
+
+            .wrapper {
+              display: flex;
+              gap: 20px;
+              background-color: #ffffff;
+              padding: 30px;
+              border-radius: 12px;
+              box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+              position: relative;
+            }
+
+            .floor-labels {
+              display: flex;
+              flex-direction: column; /* Изменено: теперь сверху вниз */
+              justify-content: space-around;
+              padding-right: 15px;
+              border-right: 1px solid #eee;
+            }
+
+            .floor-label {
+              height: 60px; /* Должно соответствовать высоте слота лифта */
+              display: flex;
+              align-items: center;
+              font-weight: bold;
+              color: #555;
+              font-size: 14px;
+              justify-content: flex-end; /* Выравнивание текста по правому краю */
+              padding-right: 10px;
+            }
+
+            .elevator-grid {
+              display: flex;
+              flex-direction: column; /* Изменено: теперь сверху вниз */
+              border: 1px solid #ddd;
+              border-radius: 8px;
+              overflow: hidden;
+              background-color: #e9ebee;
+              position: relative; /* ДОБАВЛЕНО: для правильного позиционирования абсолютных дочерних элементов */
+            }
+
+            .floor-row {
+              display: flex;
+              border-bottom: 1px solid #eee;
+            }
+
+            .floor-row:last-child {
+              border-bottom: none;
+            }
+
+            .elevator-slot {
+              width: 50px;
+              height: 60px;
+              display: flex;
+              justify-content: center;
+              align-items: center;
+              position: relative;
+              background-color: #f9f9f9;
+              border-right: 1px solid #eee;
+            }
+
+            .elevator-slot:last-child {
+              border-right: none;
+            }
+
+            .elevator {
+              width: 40px;
+              height: 50px;
+              background-color: #424242;
+              border-radius: 6px;
+              box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+              display: flex;
+              flex-direction: column;
+              justify-content: center;
+              align-items: center;
+              transition: background-color 0.3s ease;
+              position: relative; /* Для индикаторов */
+            }
+
+            .elevator svg {
+              fill: #f0f0f0; /* Цвет иконки лифта */
+              width: 28px;
+              height: 28px;
+            }
+
+            .elevator.out-of-service {
+              opacity: 0.6;
+              cursor: pointer;
+            }
+            .elevator {
+              cursor: pointer;
+            }
+            .service-indicator {
+              position: absolute;
+              bottom: -15px;
+              left: 50%;
+              transform: translateX(-50%);
+              font-size: 10px;
+              color: #9E9E9E;
+              white-space: nowrap;
+            }
+            .emergency-button {
+              position: fixed;
+              top: 20px;
+              right: 20px;
+              background-color: #f44336;
+              color: white;
+              border: none;
+              padding: 15px 25px;
+              border-radius: 5px;
+              font-size: 16px;
+              font-weight: bold;
+              cursor: pointer;
+              box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+              z-index: 100;
+              transition: background-color 0.3s ease, transform 0.2s ease;
+            }
+            .emergency-button:hover {
+              background-color: #d32f2f;
+              transform: translateY(-2px);
+            }
+            .emergency-button:active {
+              transform: translateY(0);
+            }
+
+            /* Индикаторы */
+            .direction-indicator {
+              position: absolute;
+              top: 2px;
+              right: 4px;
+              font-size: 12px;
+              color: white;
+              font-weight: bold;
+            }
+
+            .time-indicator {
+              position: absolute;
+              bottom: 2px;
+              left: 50%;
+              transform: translateX(-50%);
+              font-size: 10px;
+              color: white;
+              white-space: nowrap;
+            }
+
+            .buttons-column {
+              display: flex;
+              flex-direction: column; /* Изменено: теперь сверху вниз */
+              justify-content: space-around;
+              padding-left: 15px;
+              border-left: 1px solid #eee;
+            }
+
+            .call-button {
+              background-color: #4CAF50; /* Green */
+              color: white;
+              border: none;
+              border-radius: 5px;
+              padding: 8px 12px;
+              cursor: pointer;
+              font-size: 14px;
+              min-width: 80px;
+              text-align: center;
+              box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+              transition: background-color 0.2s ease, transform 0.1s ease;
+            }
+
+            .call-button:hover {
+              background-color: #45a049;
+              transform: translateY(-1px);
+            }
+
+            .call-button:active {
+              transform: translateY(1px);
+            }
+
+            .call-button.waiting {
+              background-color: #FFC107; /* Amber */
+              cursor: default;
+            }
+
+            .call-button.waiting:hover {
+              background-color: #FFC107;
+              transform: none;
+            }
+
+            .call-button.arrived {
+              background-color: #2196F3; /* Blue */
+              cursor: default;
+            }
+
+            .call-button.arrived:hover {
+              background-color: #2196F3;
+              transform: none;
+            }
+
+            /* Адаптивный дизайн */
+            @media (max-width: 768px) {
+              .wrapper {
+                flex-direction: column;
+                align-items: center;
+                gap: 15px;
+                padding: 20px;
+              }
+
+              .floor-labels, .buttons-column {
+                flex-direction: row;
+                width: 100%;
+                justify-content: space-around;
+                border: none;
+                padding: 0;
+              }
+
+              .floor-labels {
+                border-bottom: 1px solid #eee;
+                padding-bottom: 10px;
+                order: 1; /* Перемещаем метки этажей наверх */
+              }
+
+              .elevator-grid {
+                order: 2; /* Сетка лифтов в центре */
+              }
+
+              .buttons-column {
+                border-top: 1px solid #eee;
+                padding-top: 10px;
+                order: 3; /* Кнопки внизу */
+              }
+
+              .floor-label, .call-button {
+                height: auto;
+                padding: 5px 8px;
+                font-size: 12px;
+              }
+
+              .elevator-slot {
+                width: 40px;
+                height: 50px;
+              }
+
+              .elevator {
+                width: 30px;
+                height: 40px;
+              }
+
+              .elevator svg {
+                width: 20px;
+                height: 20px;
+              }
+
+              .emergency-button {
+                position: static; /* Делаем кнопку статической в мобильной версии */
+                margin-bottom: 15px; /* Добавляем отступ снизу */
+                width: calc(100% - 40px); /* Делаем ее шире */
+                box-sizing: border-box;
+                order: 0; /* Перемещаем на самый верх */
+              }
+            }
+          `;
+          document.head.appendChild(styles);
+
+          const container = document.querySelector('.container');
+          if (!container) {
+            console.error('Контейнер не найден');
+            return;
+          }
+
+          const NUM_FLOORS = 10; // От Ground (0) до 9-го (9)
+          const NUM_ELEVATORS = 5;
+
+          const elevatorManager = new ElevatorManager(NUM_ELEVATORS);
+          const uiManager = new ElevatorUIManager(container, NUM_FLOORS, elevatorManager);
+        }
+
+        // Запускаем приложение после загрузки DOM
+        document.addEventListener('DOMContentLoaded', initializeElevatorSystem);
+    </script>
+</body>
+</html>
